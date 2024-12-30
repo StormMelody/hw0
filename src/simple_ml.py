@@ -48,7 +48,34 @@ def parse_mnist(image_filename, label_filename):
                 for MNIST will contain the values 0-9.
     """
     ### BEGIN YOUR CODE
-    pass
+    # 打开gzip压缩文件
+    with gzip.open(image_filename, 'rb') as f:
+        # 读取文件头信息
+        magic_number = int.from_bytes(f.read(4), 'big')
+        num_images = int.from_bytes(f.read(4), 'big')
+        num_rows = int.from_bytes(f.read(4), 'big')
+        num_cols = int.from_bytes(f.read(4), 'big')
+        
+        # 读取图像数据
+        image_data = f.read()
+        
+        # 将图像数据转换为numpy数组
+        images = np.frombuffer(image_data, dtype=np.uint8)
+        images = images.reshape(num_images, num_rows * num_cols)
+
+    with gzip.open(label_filename, 'rb') as f:
+        # 读取文件头信息
+        magic_number = int.from_bytes(f.read(4), 'big')
+        num_images = int.from_bytes(f.read(4), 'big')
+        
+        # 读取图像数据
+        label_data = f.read()
+        
+        # 将图像数据转换为numpy数组
+        labels = np.frombuffer(label_data, dtype=np.uint8)
+        labels = labels.squeeze()
+
+    return images.astype(np.float32)/255.0, labels
     ### END YOUR CODE
 
 
@@ -68,7 +95,12 @@ def softmax_loss(Z, y):
         Average softmax loss over the sample.
     """
     ### BEGIN YOUR CODE
-    pass
+    z_y = Z[np.arange(Z.shape[0]),y]
+    z_y = z_y[:, np.newaxis]
+    # print("in softmax loss, z_y is:", z_y)
+    sigma_z = np.log(np.sum(np.exp(Z), axis=1))
+    softmax_loss = np.mean(sigma_z - z_y)
+    return softmax_loss.astype(np.float32)
     ### END YOUR CODE
 
 
@@ -91,7 +123,19 @@ def softmax_regression_epoch(X, y, theta, lr = 0.1, batch=100):
         None
     """
     ### BEGIN YOUR CODE
-    pass
+    offset = 0
+
+    while offset < X.shape[0]:
+        pred = np.exp(X[offset:offset+batch] @ theta).astype(np.float32)
+        pred_norm = pred / np.sum(pred, axis=1, keepdims=True).astype(np.float32)
+        I_y = np.zeros_like(pred).astype(np.float32)
+        I_y[np.arange(pred.shape[0]), y[offset:offset+batch]] = 1.0
+        gradient = X[offset:offset+batch].transpose() @ (pred_norm - I_y) / batch
+        # print(y, pred_norm - I_y)
+        # print(X, X @ theta, pred, pred_norm, "\n", lr*gradient, "\n", theta)
+        theta -=  lr * gradient
+        offset += batch
+        # print(theta)
     ### END YOUR CODE
 
 
