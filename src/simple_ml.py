@@ -162,7 +162,18 @@ def nn_epoch(X, y, W1, W2, lr = 0.1, batch=100):
         None
     """
     ### BEGIN YOUR CODE
-    pass
+    offset = 0
+
+    while offset < X.shape[0]:
+        Z1 = np.maximum(0, X[offset:offset+batch] @ W1)
+        G2 = np.exp(Z1@W2) / np.sum(np.exp(Z1@W2), axis=1, keepdims=True)
+        I_y = np.zeros_like(G2).astype(np.float32)
+        I_y[np.arange(G2.shape[0]), y[offset:offset+batch]] = 1.0
+        G2 = G2 - I_y
+        G1 = (Z1>0.0) * (G2 @ W2.transpose())
+        W1 -= lr * 1.0 / batch  * X[offset:offset+batch].transpose() @ G1
+        W2 -= lr * 1.0 / batch  * Z1.transpose() @ G2
+        offset += batch
     ### END YOUR CODE
 
 
