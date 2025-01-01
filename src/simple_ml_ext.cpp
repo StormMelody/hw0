@@ -33,7 +33,31 @@ void softmax_regression_epoch_cpp(const float *X, const unsigned char *y,
      */
 
     /// BEGIN YOUR CODE
-
+    
+    float* pred = (float*)malloc(batch*k*sizeof(float));
+    float* pred_rowsum = (float*)malloc(batch*sizeof(float));
+    float* I_y = (float*)malloc(batch*k*sizeof(float));
+    for(int offset = 0; offset < m; offset += batch){
+        memset(I_y, 0.0, batch * k * sizeof(float));
+        memset(pred_rowsum, 0.0, batch * sizeof(float));
+        for(int i = 0;i<batch*k;i++){
+            pred[i] = 0;
+            for(int j=0;j<n;j++)pred[i] += X[(offset+(i/k))*n+j] * theta[j*k+(i%k)];
+        }
+        for(int i = 0;i<batch*k;i++){
+            pred[i] = std::exp(pred[i]);
+            pred_rowsum[i/k] += pred[i];
+        }
+        for(int i = 0;i<batch*k;i++){
+            if(y[offset+(i/k)]==i%k) I_y[i]=1.0;
+        } 
+        for(int i = 0;i<batch*k;i++)pred[i] = (pred[i] / pred_rowsum[i/k] - I_y[i])/batch;
+        for(int i = 0;i<n*k;i++){
+            float gradient = 0.0;
+            for(int j=0;j<batch;j++)gradient += X[(offset+j)*n+i/k] * pred[j*k+(i%k)];
+            theta[i] -= lr * gradient;
+        }
+    }
     /// END YOUR CODE
 }
 
